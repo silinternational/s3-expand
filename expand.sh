@@ -17,20 +17,55 @@ function usage () {
   echo ""
 }
 
-function cmd-check () {
+function __cmd-check () {
   name=$1
   shift 1
 
   # See if the command is available, under any of the provided names
   # then define the named variable with its binary path
   for cmd in "$@"; do
-    if which $cmd > /dev/null; then
-      declare -g $name="$(which $cmd)"
+    if hash "$cmd" 1>/dev/null 2>/dev/null; then
+      declare -g $name="$cmd"
       return
     fi
   done
 }
 
+function cmd-check-require () {
+  name=$1
+
+  __cmd-check "$@"
+
+  if ! [[ ${!name} ]]; then
+    echo "ERROR: no \`$1' equivalent found in path"
+    exit 1
+  fi
+}
+
+function cmd-check () {
+  name=$1
+
+  __cmd-check "$@"
+
+  if ! [[ ${!name} ]]; then
+    echo "WARNING: no \`$1' equivalent found in path"
+  fi
+}
+
+
+# Ensure that we have the basics installed
+cmd-check-require CAT cat
+cmd-check-require TR tr
+cmd-check-require CUT cut
+cmd-check-require DIRNAME dirname
+cmd-check-require BASENAME basename
+cmd-check-require GREP grep
+cmd-check-require SED sed
+cmd-check-require CHOWN chown 
+cmd-check-require CHMOD chmod
+cmd-check-require MKDIR mkdir
+cmd-check-require TAR tar
+cmd-check-require RM rm
 
 # Need to have SOME arguments
 if [[ $# < 1 ]]; then
@@ -46,7 +81,7 @@ if [[ $1 = '-c' ]]; then
     usage
     exit 1
   else
-    cat $2 | tr '\n' '\32'
+    "$CAT" $2 | "$TR" '\n' '\32'
     exit 0
   fi
 fi
@@ -69,16 +104,16 @@ fi
 for var in $EXPAND_FILES; do
   # Separate into the name of the ENV variable referenced,
   # and the target file to be created/replaced
-  ev=$( echo $var | cut -d '=' -f 1 )
-  target=$( echo $var | cut -d '=' -f 2- )
-  basedir=$( dirname $target )
+  ev=$( echo $var | "$CUT" -d '=' -f 1 )
+  target=$( echo $var | "$CUT" -d '=' -f 2- )
+  basedir=$( "$DIRNAME" $target )
 
   #Extract the metadata, if it is set
-  meta=$( basename $target | grep -o '\[.*\]$' | sed -e 's/^\[//' -e 's/\]$//' )
-  file=$( echo $target | sed 's/\(.*\)\[.*\]$/\1/' )
+  meta=$( "$BASENAME" $target | "$GREP" -o '\[.*\]$' | "$SED" -e 's/^\[//' -e 's/\]$//' )
+  file=$( echo $target | "$SED" 's/\(.*\)\[.*\]$/\1/' )
 
-  perms=$( echo $meta | cut -d '|' -f 1)
-  owner=$( echo $meta | cut -d '|' -f 2-)
+  perms=$( echo $meta | "$CUT" -d '|' -f 1)
+  owner=$( echo $meta | "$CUT" -d '|' -f 2-)
 
   # Sanity Check the passed permissions
   if [[ -n $perms ]] && ! [[ $perms =~ ^[01234567]+$ ]]; then
@@ -95,19 +130,19 @@ for var in $EXPAND_FILES; do
 
 
   # Create the parent directory
-  mkdir -p $basedir
+  "$MKDIR" -p $basedir
 
   # Dump the value to the named file, running the conversion
-  echo -n ${!ev} | tr "\32" "\n" > $file
+  echo -n ${!ev} | "$TR" "\32" "\n" > $file
 
   # Set the file's permissions, if applicable
   if [[ -n $perms ]]; then
-    chmod $perms $file
+    "$CHMOD" $perms $file
   fi
 
   # Set the file's owner, if applicable
   if [[ -n $owner ]]; then
-    chown $owner $file
+    "$CHOWN" $owner $file
   fi
 
   # Unset the variable in the environment
@@ -122,7 +157,7 @@ cmd-check S3CMD s3cmd
 # Check for EXPAND_S3_KEY and EXPAND_S3_SECRET in the environment, useless otherwise
 if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; then
   # Configure the credentials
-  cat > ~/.s3cfg <<-EOF
+  "$CAT" > ~/.s3cfg <<-EOF
 	[default]
 	access_key = $EXPAND_S3_KEY
 	secret_key = $EXPAND_S3_SECRET
@@ -133,23 +168,23 @@ if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; the
   for var in $EXPAND_S3_TARS; do
 
     # Separate out the tarball from its unpacking destination
-    object=$( echo $var | cut -d '|' -f 1)
-    targetdir=$( echo $var | cut -d '|' -f 2-)
+    object=$( echo $var | "$CUT" -d '|' -f 1)
+    targetdir=$( echo $var | "$CUT" -d '|' -f 2-)
 
     # We need both to be defined, move on otherwise
     if [[ -z $object ]] || [[ -z $targetdir ]]; then continue; fi
 
     # Create the target directory if necessary
-    mkdir -p $targetdir
+    "$MKDIR" $targetdir
 
     # Run the extraction
-    $S3CMD --force get s3://$object /expand_s3.tar
+    "$S3CMD" --force get s3://$object /expand_s3.tar
     
     # Untar it
-    tar xf /expand_s3.tar -C $targetdir
+    "$TAR" xf /expand_s3.tar -C $targetdir
 
     # Clean Up the original tarball
-    rm /expand_s3.tar
+    "$RM" /expand_s3.tar
   done
 
   # Pull Individual files from S3
@@ -157,21 +192,21 @@ if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; the
   for var in $EXPAND_S3_FILES; do
 
     # Separate out the s3 source from the local destination
-    object=$( echo $var | cut -d '|' -f 1)
-    targetfile=$( echo $var | cut -d '|' -f 2-)
+    object=$( echo $var | "$CUT" -d '|' -f 1)
+    targetfile=$( echo $var | "$CUT" -d '|' -f 2-)
 
     # We need both to be defined, move on otherwise
     if [[ -z $object ]] || [[ -z $targetfile ]]; then continue; fi
 
     # Create the containing directory, if necessary
     if [[ $targetfile =~ /^ ]]; then
-      mkdir -p $targetfile
+      "$MKDIR" -p $targetfile
     else
-      mkdir -p $(dirname $targetfile)
+      "$MKDIR" -p $("$DIRNAME" $targetfile)
     fi
 
     # Run the extraction
-    $S3CMD --force get s3://$object $targetfile
+    "$S3CMD" --force get s3://$object $targetfile
   done
 
   # Pull Folders from S3 (trailing slash = just the contents, not the folder itself)
@@ -179,18 +214,18 @@ if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; the
   for var in $EXPAND_S3_FOLDERS; do
 
     # Separate out the s3 source from the local destination
-    object=$( echo $var | cut -d '|' -f 1)
-    targetfolder=$( echo $var | cut -d '|' -f 2-)
+    object=$( echo $var | "$CUT" -d '|' -f 1)
+    targetfolder=$( echo $var | "$CUT" -d '|' -f 2-)
 
     # We need both to be defined, move on otherwise
     if [[ -z $object ]] || [[ -z $targetfolder ]]; then continue; fi
 
     # Run the extraction
-    $S3CMD sync -r s3://$object $targetfolder
+    "$S3CMD" sync -r s3://$object $targetfolder
   done
 
   # Remove the Credentials, Unset the Environment
-  rm ~/.s3cfg
+  "$RM" ~/.s3cfg
   export -n EXPAND_S3_KEY EXPAND_S3_SECRET EXPAND_S3_FILES
 fi
 
@@ -202,10 +237,10 @@ fi
 # Space delimited list..
 for var in $EXPAND_SED_FILES; do
   # Separate out target file from the sed script to run on it
-  target=$( echo $var | cut -d '|' -f 1)
-  script=$( echo $var | cut -d '|' -f 2-)
+  target=$( echo $var | "$CUT" -d '|' -f 1)
+  script=$( echo $var | "$CUT" -d '|' -f 2-)
 
-  sed -i "$target" -f "$script"
+  "$SED" -i "$target" -f "$script"
   
   export -n EXPAND_SED_FILES
 done
