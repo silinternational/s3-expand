@@ -1,0 +1,97 @@
+#!/bin/bash
+# Defines useful functions and runs tests
+
+# TestStart
+#     - Call this before a test, passing the test name as the first argument
+#
+# TestEnd
+#     - Call this at the end of a test, with the exit status as the first
+#       argument, and a message for the remaining arguments on failure
+#
+# Test
+#     - Sources the filenames passed as arguments, running each as a single
+#       test. The exit value of the file is the result value of the test. If
+#       it is non-zero, the test is considered failed, and the output of the
+#       file (both stdout and stderror) is printed as the error message.
+
+num_success=0
+num_failed=0
+
+red=$'\033[31m'
+green=$'\033[32m'
+blue=$'\033[34m'
+darkgreen=$'\033[36m'
+normal=$'\033[0m'
+
+cat <<- EOF
+	${darkgreen}=======================${normal}
+	${darkgreen}    Starting Tests     ${normal}
+	${darkgreen}=======================${normal}
+	EOF
+
+function TestStart () {
+    cat  <<-EOF
+	${blue}Running Test:${normal} $*
+	EOF
+}
+
+function TestEnd () {
+  declare -g num_success num_fail
+
+  ret_val=$1
+  shift 1
+
+  if [[ $ret_val == 0 ]]; then
+    num_success=$(( $num_success + 1 ))
+
+    cat  <<-EOF
+	  ${green}Test Succeeded!${normal}
+	EOF
+  else
+    num_fail=$(( $num_fail + 1 ))
+
+    cat  <<-EOF
+	${red}Test failed with status:${normal} $ret_val
+	${red}Message:${normal}
+	EOF
+    echo "$*" | fold -s -w 76 | sed 's/^/  /'
+  fi
+
+  # For the newline
+  echo
+}
+
+function Test () {
+  for file in "$@"; do
+    TestStart "$file"
+
+    if ! [[ -a $file ]]; then
+      TestEnd 1 "Test file \`$file' does not exist!"
+    elif ! [[ -f $file ]]; then
+      TestEnd 1 "Test file \`$file' is not a regular file!"
+    elif ! [[ -r $file ]]; then
+      TestEnd 1 "Test file \`$file' cannot be read!"
+    else
+      err_msg=$(source $file 2>&1)
+      TestEnd $? $err_msg
+    fi
+  done
+}
+
+function FinishTests () {
+  declare -g num_success num_fail
+
+  cat <<-EOF
+	${darkgreen}=======================${normal}
+	${darkgreen}Tests finished running:${normal}
+	${darkgreen}=======================${normal}
+	$num_success ${green}succeeded${normal}
+	$num_fail ${red}failed${normal} 
+	EOF
+
+  if [[ $num_fail != 0 ]]; then
+    exit 1
+  else
+    exit 0
+  fi
+}
