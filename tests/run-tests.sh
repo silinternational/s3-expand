@@ -5,5 +5,6 @@
 
 Test passthrough-success
 Test passthrough-failure
+Test expand-env
 
 FinishTests
