@@ -1,0 +1,5 @@
+#!/bin/bash
+
+../../expand.sh -c original > converted
+
+diff compare converted
