@@ -45,7 +45,7 @@ function TestEnd () {
     num_success=$(( $num_success + 1 ))
 
     cat  <<-EOF
-	  ${green}Test Succeeded!${normal}
+	${green}Test Succeeded!${normal}
 	EOF
   else
     num_fail=$(( $num_fail + 1 ))
@@ -65,15 +65,24 @@ function Test () {
   for file in "$@"; do
     TestStart "$file"
 
-    if ! [[ -a $file ]]; then
-      TestEnd 1 "Test file \`$file' does not exist!"
-    elif ! [[ -f $file ]]; then
-      TestEnd 1 "Test file \`$file' is not a regular file!"
-    elif ! [[ -r $file ]]; then
-      TestEnd 1 "Test file \`$file' cannot be read!"
+    # If it is a directory, change to that directory
+    dir="."
+    if [[ -d $file ]]; then
+      dir="$file"
+    fi
+
+    filename="$dir/$file"
+    if ! [[ -a $filename ]]; then
+      TestEnd 1 "Test file \`$filename' does not exist!"
+    elif ! [[ -f $filename ]]; then
+      TestEnd 1 "Test file \`$filename' is not a regular file!"
+    elif ! [[ -r $filename ]]; then
+      TestEnd 1 "Test file \`$filename' cannot be read!"
     else
-      err_msg=$(source $file 2>&1)
+      cd "$dir"
+      err_msg=$(source "$file" 2>&1)
       TestEnd $? $err_msg
+      cd $OLDPWD
     fi
   done
 }
