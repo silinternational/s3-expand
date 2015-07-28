@@ -15,7 +15,7 @@
 #       file (both stdout and stderror) is printed as the error message.
 
 num_success=0
-num_failed=0
+num_fail=0
 
 red=$'\033[31m'
 green=$'\033[32m'
