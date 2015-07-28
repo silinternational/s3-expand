@@ -113,7 +113,11 @@ for var in $EXPAND_FILES; do
   file=$( echo $target | "$SED" 's/\(.*\)\[.*\]$/\1/' )
 
   perms=$( echo $meta | "$CUT" -d '|' -f 1)
-  owner=$( echo $meta | "$CUT" -d '|' -f 2-)
+  if echo $meta | "$GREP" '|' 1>/dev/null; then
+    owner=$( echo $meta | "$CUT" -d '|' -f 2-)
+  else
+    owner=""
+  fi
 
   # Sanity Check the passed permissions
   if [[ -n $perms ]] && ! [[ $perms =~ ^[01234567]+$ ]]; then
