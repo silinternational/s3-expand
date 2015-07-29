@@ -1,6 +1,6 @@
 #!/bin/bash
 # Wrapper script to build files using ENV variables
-#set -x
+set -x
 
 function usage () {
   echo "Usage: $0 command [args] ..."
@@ -224,6 +224,8 @@ if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; the
   # Pull Folders from S3 (trailing slash = just the contents, not the folder itself)
   # Space delimited list..
   for var in $EXPAND_S3_FOLDERS; do
+    # If there is no bar ("|"), the entry is invalid; move on
+    if ! echo $var | "$GREP" '|' 1>/dev/null; then continue; fi
 
     # Separate out the s3 source from the local destination
     object=$( echo $var | "$CUT" -d '|' -f 1)
@@ -232,8 +234,11 @@ if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; the
     # We need both to be defined, move on otherwise
     if [[ -z $object ]] || [[ -z $targetfolder ]]; then continue; fi
 
+    # Create the containing directory, if necessary
+    "$MKDIR" -p $targetfolder/
+
     # Run the extraction
-    "$S3CMD" sync -r s3://$object $targetfolder
+    "$S3CMD" sync -r s3://$object $targetfolder/
   done
 
   # Remove the Credentials, Unset the Environment
