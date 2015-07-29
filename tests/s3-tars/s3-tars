@@ -15,7 +15,7 @@ if . ../check-s3-creds; then
     echo "ERROR: expand.sh exited."
   else
     # Check File Creation
-    for file in ./comparedir ./newdir ./newdir/comparedir ; do
+    for file in ./comparedir ./newdir ./newdir/comparedir ./comparedir/$(ls originals) ./newdir/comparedir/$(ls originals); do
       if ! [[ -a $file ]]; then
         test_succeeded=false
         echo "ERROR: $file was not created."
