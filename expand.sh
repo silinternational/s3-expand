@@ -170,6 +170,8 @@ if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; the
   # Pull tarballs from S3
   # Space delimited list..
   for var in $EXPAND_S3_TARS; do
+    # If there is no bar ("|"), the entry is invalid; move on
+    if ! echo $var | grep '|' 1>/dev/null; then continue; fi
 
     # Separate out the tarball from its unpacking destination
     object=$( echo $var | "$CUT" -d '|' -f 1)
