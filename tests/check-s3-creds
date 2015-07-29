@@ -1,0 +1,44 @@
+#!/bin/bash
+
+test_succeeded=true
+if [[ -z $EXPAND_S3_KEY ]]; then 
+  test_succeeded=false
+  echo "EXPAND_S3_KEY is not set in the environment."
+fi
+
+if [[ -z $EXPAND_S3_SECRET ]]; then
+  test_succeeded=false
+  echo "EXPAND_S3_SECRET is not set in the environment."
+fi
+
+if [[ -z $S3_TEST_PATH ]]; then
+  test_succeeded=false
+  echo "S3_TEST_PATH is not set in the environment."
+fi
+
+if [[ -n $S3_TEST_PATH && -n $EXPAND_S3_SECRET && -n $EXPAND_S3_KEY ]]; then
+  cat > ~/.s3cfg <<-EOF
+        [default]
+        access_key = $EXPAND_S3_KEY
+        secret_key = $EXPAND_S3_SECRET
+	EOF
+
+  echo "S3 Test" >> s3_test
+  if ! s3cmd put s3_test s3://"$S3_TEST_PATH"/s3_test; then
+    test_succeeded=false
+  elif ! s3cmd get s3://"$S3_TEST_PATH"/s3_test s3_test2; then
+    test_succeeded=false
+  elif ! diff s3_test s3_test2; then
+    test_succeeded=false
+    echo "ERROR testing S3: test file pulled differs from test file pushed."
+  else
+    rm s3_test
+    rm s3_test2
+  fi
+fi
+
+if ! $test_succeeded; then
+  echo "WARN: S3 credentials are not configured correctly; some tests will be unable to proceed."
+fi
+
+$test_succeeded

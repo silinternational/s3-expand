@@ -10,4 +10,6 @@ Test convert-loop
 
 Test expand-env
 
+Test s3-files
+
 FinishTests
