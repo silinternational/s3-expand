@@ -18,9 +18,9 @@ fi
 
 if [[ -n $S3_TEST_PATH && -n $EXPAND_S3_SECRET && -n $EXPAND_S3_KEY ]]; then
   cat > ~/.s3cfg <<-EOF
-        [default]
-        access_key = $EXPAND_S3_KEY
-        secret_key = $EXPAND_S3_SECRET
+	[default]
+	access_key = $EXPAND_S3_KEY
+	secret_key = $EXPAND_S3_SECRET
 	EOF
 
   echo "S3 Test" >> s3_test
