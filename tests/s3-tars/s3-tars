@@ -22,7 +22,7 @@ if . ../check-s3-creds; then
       fi
     done
 
-    for file in $(find . | grep -v '^\.$\|^./originals\|^./newdir$\|^./newdir/comparedir$\|^./s3-tars$\|^./s3-tars.tar$\|^./comparedir'); do
+    for file in $(find . | grep -v '^\.$\|^./originals\|^./newdir$\|^./newdir/comparedir\|^./s3-tars$\|^./s3-tars.tar$\|^./comparedir'); do
       test_succeeded=false
         echo "ERROR: $file should not have been created."
     done
