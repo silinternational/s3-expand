@@ -11,5 +11,6 @@ Test expand-env
 
 Test s3-files
 Test s3-tars
+Test s3-sync
 
 FinishTests
