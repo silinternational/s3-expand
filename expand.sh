@@ -238,7 +238,7 @@ if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; the
 
   # Remove the Credentials, Unset the Environment
   "$RM" ~/.s3cfg
-  export -n EXPAND_S3_KEY EXPAND_S3_SECRET EXPAND_S3_FILES
+  export -n EXPAND_S3_KEY EXPAND_S3_SECRET EXPAND_S3_FILES EXPAND_S3_TARS EXPAND_S3_FOLDERS
 fi
 
 
