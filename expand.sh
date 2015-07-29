@@ -1,6 +1,6 @@
 #!/bin/bash
 # Wrapper script to build files using ENV variables
-set -x
+#set -x
 
 function usage () {
   echo "Usage: $0 command [args] ..."
