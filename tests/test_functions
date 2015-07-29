@@ -6,7 +6,7 @@
 #
 # TestEnd
 #     - Call this at the end of a test, with the exit status as the first
-#       argument, and a message for the remaining arguments on failure
+#       argument, and a message for the remaining arguments
 #
 #       ASCII SUB characters (032) in the message will be replaced with
 #       newlines.
@@ -49,13 +49,15 @@ function TestEnd () {
 
     cat  <<-EOF
 	${green}Test Succeeded!${normal}
+	${green}Message/Output:${normal}
 	EOF
+    echo "$*" | tr '\32' '\n' | fold -s -w 76 | sed 's/^/  /'
   else
     num_fail=$(( $num_fail + 1 ))
 
     cat  <<-EOF
 	${red}Test failed with status:${normal} $ret_val
-	${red}Message:${normal}
+	${red}Message/Output:${normal}
 	EOF
     echo "$*" | tr '\32' '\n' | fold -s -w 76 | sed 's/^/  /'
   fi
