@@ -179,9 +179,9 @@ if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; the
     if [[ -z $object ]] || [[ -z $targetdir ]]; then continue; fi
 
     # Create the target directory if necessary
-    "$MKDIR" $targetdir
+    "$MKDIR" -p $targetdir
 
-    # Run the extraction
+    # Run the extraction, overwriting files if necessary
     "$S3CMD" --force get s3://$object /expand_s3.tar
     
     # Untar it
