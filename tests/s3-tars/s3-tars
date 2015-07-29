@@ -1,0 +1,50 @@
+#!/bin/bash
+test_succeeded=true
+
+if . ../check-s3-creds; then
+  # First, prepare the testing environment
+  cd originals
+  tar cf ../s3-tars.tar *
+  cd ..
+  s3cmd put ./s3-tars.tar s3://"$S3_TEST_PATH"/s3-tars.tar
+
+  export EXPAND_S3_TARS="$S3_TEST_PATH/s3-tars.tar|./comparedir $S3_TEST_PATH/s3-tars.tar|./newdir/comparedir |./nonexist1 $S3_TEST_PATH/nonexist2.tar| $S3_TEST_PATH/nonexist3"
+
+  if ! ../../expand.sh true; then
+    test_succeeded=false
+    echo "ERROR: expand.sh exited."
+  else
+    # Check File Creation
+    for file in ./comparedir ./newdir ./newdir/comparedir ; do
+      if ! [[ -a $file ]]; then
+        test_succeeded=false
+        echo "ERROR: $file was not created."
+      fi
+    done
+
+    for file in $(find . | grep -v '^\.$\|^./originals\|^./newdir$\|^./newdir/comparedir$\|^./s3-tars$\|^./s3-tars.tar$\|^./comparedir'); do
+      test_succeeded=false
+        echo "ERROR: $file should not have been created."
+    done
+
+    for dir in ./comparedir ./newdir/comparedir; do 
+      for file in $(ls $dir);do
+        if ! diff ./originals/$file $dir/$file; then
+          test_succeeded=false
+          cat <<-EOF
+	ERROR: S3 file expansion not performed correctly:
+	  Correct Contents of '$dir/$file':
+	$(<./originals/$file)
+	  Found Contents:
+	$(<$dir/$file)
+
+	EOF
+        fi
+      done
+    done
+  fi
+else
+  test_succeeded=false
+fi
+
+$test_succeeded
