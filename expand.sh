@@ -211,7 +211,7 @@ if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; the
     if [[ -z $object ]] || [[ -z $targetfile ]]; then continue; fi
 
     # Create the containing directory, if necessary
-    if [[ $targetfile =~ /^ ]]; then
+    if [[ $targetfile =~ /$ ]]; then
       "$MKDIR" -p $targetfile
     else
       "$MKDIR" -p $("$DIRNAME" $targetfile)
