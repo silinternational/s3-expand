@@ -66,6 +66,7 @@ cmd-check-require CHMOD chmod
 cmd-check-require MKDIR mkdir
 cmd-check-require TAR tar
 cmd-check-require RM rm
+cmd-check-require MKTEMP mktemp
 
 # Need to have SOME arguments
 if [[ $# < 1 ]]; then
@@ -180,17 +181,20 @@ if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; the
     # We need both to be defined, move on otherwise
     if [[ -z $object ]] || [[ -z $targetdir ]]; then continue; fi
 
+    # Create a temporary filename for the tar
+    temp_tar=$("$MKTEMP" -u)".tar"
+
     # Create the target directory if necessary
     "$MKDIR" -p $targetdir
 
     # Run the extraction, overwriting files if necessary
-    "$S3CMD" --force get s3://$object /expand_s3.tar
+    "$S3CMD" --force get s3://$object "$temp_tar"
     
     # Untar it
-    "$TAR" xf /expand_s3.tar -C $targetdir
+    "$TAR" xf "$temp_tar" -C $targetdir
 
     # Clean Up the original tarball
-    "$RM" /expand_s3.tar
+    "$RM" "$temp_tar"
   done
 
   # Pull Individual files from S3
