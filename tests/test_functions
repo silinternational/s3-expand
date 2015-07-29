@@ -8,6 +8,9 @@
 #     - Call this at the end of a test, with the exit status as the first
 #       argument, and a message for the remaining arguments on failure
 #
+#       ASCII SUB characters (032) in the message will be replaced with
+#       newlines.
+#
 # Test
 #     - Sources the filenames passed as arguments, running each as a single
 #       test. The exit value of the file is the result value of the test. If
@@ -54,7 +57,7 @@ function TestEnd () {
 	${red}Test failed with status:${normal} $ret_val
 	${red}Message:${normal}
 	EOF
-    echo "$*" | fold -s -w 76 | sed 's/^/  /'
+    echo "$*" | tr '\32' '\n' | fold -s -w 76 | sed 's/^/  /'
   fi
 
   # For the newline
@@ -80,8 +83,10 @@ function Test () {
       TestEnd 1 "Test file \`$filename' cannot be read!"
     else
       cd "$dir"
-      err_msg=$(source "$file" 2>&1)
+      set -o pipefail
+      err_msg=$(source "$file" 2>&1 | tr '\n' '\32')
       TestEnd $? $err_msg
+      set +o pipefail
       cd $OLDPWD
     fi
   done
