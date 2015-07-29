@@ -1,5 +1,12 @@
 #!/bin/bash
+test_succeeded=true
 
-../../expand.sh -c original > converted
+if ! ../../expand.sh -c original > converted; then
+  test_succeeded=false
+fi
 
-diff compare converted
+if ! diff compare converted; then
+  test_succeeded=false
+fi
+
+$test_succeeded

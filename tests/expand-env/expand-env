@@ -16,7 +16,10 @@ export PERMSE="Mice upon a time..."
 
 
 test_succeeded=true
-../../expand.sh true
+if ! ../../expand.sh true; then # start expand.sh test
+  test_succeeded=false
+  echo "ERROR: expand.sh failed"
+else
 
 
 # Test first for creation
@@ -175,4 +178,5 @@ elif ! [[ $PERMSE == $(<./perms5) ]]; then
 	EOF
 fi
 
+fi # end expand.sh test
 $test_succeeded
