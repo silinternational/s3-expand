@@ -194,6 +194,8 @@ if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; the
   # Pull Individual files from S3
   # Space delimited list..
   for var in $EXPAND_S3_FILES; do
+    # If there is no bar ("|"), the entry is invalid; move on
+    if ! echo $var | grep '|' 1>/dev/null; then continue; fi
 
     # Separate out the s3 source from the local destination
     object=$( echo $var | "$CUT" -d '|' -f 1)
