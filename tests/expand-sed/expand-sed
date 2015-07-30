@@ -41,7 +41,7 @@ else
     fi
   done
 
-  for file in $(find . | grep -v '^\.$\|^./s3-sed$\|^./sed[AB]$\|^./testfile[AB]$\|^./checkfile[AB]$'); do
+  for file in $(find . | grep -v '^\.$\|^./expand-sed$\|^./sed[AB]$\|^./testfile[AB]$\|^./checkfile[AB]$'); do
     test_succeeded=false
       echo "ERROR: $file should not have been created."
   done
