@@ -1,0 +1,182 @@
+#!/bin/bash
+#
+# Tests the expansion of environmental variables
+
+export EXPAND_FILES="SIMPLE=./simple DIR=./newdir/luna NEWLINES=./newlines PERMSA=./perms1[464] PERMSB=./perms2[|23] PERMSC=./perms3[|24.25] PERMSD=./perms4[765|26] PERMSE=./perms5[341|27.28] FORGOT=./forgot"
+
+export SIMPLE="Once upon a time..."
+export DIR="The Cow Jumped Over the Moon!"
+export NEWLINES="Bah, Bah, Black Sheep,Have you any wool?"
+export PERMSA="Twice upon a time..."
+export PERMSB="Thrice upon a time..."
+export PERMSC="Dice upon a time..."
+export PERMSD="Ice upon a time..."
+export PERMSE="Mice upon a time..."
+# FORGOT is intentionally not set
+
+
+test_succeeded=true
+if ! ../../s3-expand true; then # start s3-expand test
+  test_succeeded=false
+  echo "ERROR: s3-expand failed"
+else
+
+
+# Test first for creation
+for file in ./simple ./newdir/luna ./newlines ./perms{1,2,3,4,5}; do
+  if ! [[ -a $file ]]; then
+    echo "$file was not created"
+    echo
+    test_succeeded=false
+  fi
+done
+
+if [[ -a ./forgot ]]; then
+  test_succeeded=false
+  echo "File 'forgot' should not have been created."
+  echo
+fi
+
+# Test for permissions
+function check-perms () {
+  file=$1
+  uid=$2
+  gid=$3
+  mode=$4
+
+  actual_uid=$(stat -c '%u' $file)
+  actual_gid=$(stat -c '%g' $file)
+  actual_mode=$(stat -c '%a' $file)
+
+  declare -g test_succeeded
+
+  if [[ $actual_uid != $uid ]]; then
+    test_succeeded=false
+    echo "$file was changed to a wrong uid; should be $uid, is $actual_uid"
+    echo
+  fi
+
+  if [[ $actual_gid != $gid ]]; then
+    test_succeeded=false
+    echo "$file was changed to a wrong gid; should be $gid, is $actual_gid"
+    echo
+  fi
+
+  if [[ $actual_mode != $mode ]]; then
+    test_succeeded=false
+    echo "$file was set to a wrong mode; should be $mode, is $actual_mode"
+    echo
+  fi
+}
+
+default_uid=$(id -u)
+default_gid=$(id -g)
+
+touch a
+default_mode=$(stat -c%a a)
+rm a
+
+mkdir a
+default_dmode=$(stat -c%a a)
+rmdir a
+
+# check-perms file uid gid mode
+check-perms "./simple"      $default_uid $default_gid $default_mode
+check-perms "./newdir"      $default_uid $default_gid $default_dmode
+check-perms "./newdir/luna" $default_uid $default_gid $default_mode
+check-perms "./newlines"    $default_uid $default_gid $default_mode
+check-perms "./perms1"      $default_uid $default_gid 464
+check-perms "./perms2"      23           $default_gid $default_mode
+check-perms "./perms3"      24           25           $default_mode
+check-perms "./perms4"      26           $default_gid 765
+check-perms "./perms5"      27           28           341
+
+# Finally, test for contents, after resetting the modes
+for file in ./simple ./newdir/luna ./newlines ./perms{1,2,3,4,5}; do
+  chmod u+r $file
+done
+
+if ! [[ $SIMPLE == $(<./simple) ]]; then
+  test_succeeded=false
+  cat <<-EOF
+	Simple environmental expansion not performed correctly:
+	  Correct Contents:
+	$SIMPLE
+	  Found Contents:
+	$(<./simple)
+
+	EOF
+elif ! [[ $DIR == $(<./newdir/luna) ]]; then
+  test_succeeded=false
+  cat <<-EOF
+	New directory environmental expansion not performed correctly:
+	  Correct Contents:
+	$DIR
+	  Found Contents:
+	$(<./newdir/luna)
+
+	EOF
+elif ! [[ $(echo -n $NEWLINES |tr '\32' '\n') == $(<./newlines) ]]; then
+  test_succeeded=false
+  cat <<-EOF
+	Newline environmental expansion not performed correctly:
+	  Correct Contents:
+	$(echo -n $NEWLINES | tr '\32' '\n')
+	  Found Contents:
+	$(<./newlines)
+
+	EOF
+elif ! [[ $PERMSA == $(<./perms1) ]]; then
+  test_succeeded=false
+  cat <<-EOF
+	First permissions expansion not performed correctly:
+	  Correct Contents:
+	$PERMSA
+	  Found Contents:
+	$(<./perms1)
+
+	EOF
+elif ! [[ $PERMSB == $(<./perms2) ]]; then
+  test_succeeded=false
+  cat <<-EOF
+	Second permissions expansion not performed correctly:
+	  Correct Contents:
+	$PERMSB
+	  Found Contents:
+	$(<./perms2)
+
+	EOF
+elif ! [[ $PERMSC == $(<./perms3) ]]; then
+  test_succeeded=false
+  cat <<-EOF
+	Third permissions expansion not performed correctly:
+	  Correct Contents:
+	$PERMSC
+	  Found Contents:
+	$(<./perms3)
+
+	EOF
+elif ! [[ $PERMSD == $(<./perms4) ]]; then
+  test_succeeded=false
+  cat <<-EOF
+	Fourth permissions expansion not performed correctly:
+	  Correct Contents:
+	$PERMSD
+	  Found Contents:
+	$(<./perms4)
+
+	EOF
+elif ! [[ $PERMSE == $(<./perms5) ]]; then
+  test_succeeded=false
+  cat <<-EOF
+	Fifth permissions expansion not performed correctly:
+	  Correct Contents:
+	$PERMSE
+	  Found Contents:
+	$(<./perms5)
+
+	EOF
+fi
+
+fi # end s3-expand test
+$test_succeeded

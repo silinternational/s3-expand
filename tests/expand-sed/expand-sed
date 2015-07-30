@@ -1,0 +1,64 @@
+#!/bin/bash
+test_succeeded=true
+
+export EXPAND_SED_FILES="testfileA|sedA testfileB|sedB |nonexist1 nonexist2 | nonexist3|nonexist4"
+
+# setup
+cat <<EOF > testfileA
+A quick brown fox jumped over the lazy dog.
+A quick brown fox jumped over the lazy dog.
+EOF
+
+cat <<EOF > sedA
+s/jumped/FOOBAR/
+EOF
+cp testfileA checkfileA
+sed -i checkfileA -f sedA
+
+
+cat <<EOF > testfileB
+.god yzal eht revo depmuj xof nworb kciuq A.
+.god yzal eht revo depmuj xof nworb kciuq A.
+EOF
+
+cat <<EOF > sedB
+s/depmuj/FOOBAR/
+EOF
+cp testfileB checkfileB
+sed -i checkfileB -f sedB
+
+
+
+if ! ../../s3-expand true; then
+  test_succeeded=false
+  echo "ERROR: s3-expand exited."
+else
+  # Check File Creation
+  for file in sedA sedB testfileA testfileB checkfileA checkfileB; do
+    if ! [[ -a $file ]]; then
+      test_succeeded=false
+      echo "ERROR: ./$file was not created."
+    fi
+  done
+
+  for file in $(find . | grep -v '^\.$\|^./expand-sed$\|^./sed[AB]$\|^./testfile[AB]$\|^./checkfile[AB]$'); do
+    test_succeeded=false
+      echo "ERROR: $file should not have been created."
+  done
+
+  for suffix in A B;do
+    if ! diff ./testfile$suffix ./checkfile$suffix; then
+      test_succeeded=false
+      cat <<-EOF
+	ERROR: Sed expansion not performed correctly:
+	  Correct Contents of './testfile$suffix':
+	$(<./checkfile$suffix)
+	  Found Contents:
+	$(<./testfile$suffix)
+
+	EOF
+    fi
+  done
+fi
+
+$test_succeeded

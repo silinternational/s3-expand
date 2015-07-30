@@ -1,0 +1,7 @@
+#!/bin/bash
+
+if ! ../s3-expand false; then
+  true
+else
+  false
+fi
