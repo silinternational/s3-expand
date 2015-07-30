@@ -29,9 +29,9 @@ sed -i checkfileB -f sedB
 
 
 
-if ! ../../expand.sh true; then
+if ! ../../s3-expand true; then
   test_succeeded=false
-  echo "ERROR: expand.sh exited."
+  echo "ERROR: s3-expand exited."
 else
   # Check File Creation
   for file in sedA sedB testfileA testfileB checkfileA checkfileB; do

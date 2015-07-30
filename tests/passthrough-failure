@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if ! ../expand.sh false; then
+if ! ../s3-expand false; then
   true
 else
   false

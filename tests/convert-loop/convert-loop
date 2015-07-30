@@ -1,7 +1,7 @@
 #!/bin/bash
 test_succeeded=true
 
-if ! ../../expand.sh -c original > converted; then
+if ! ../../s3-expand -c original > converted; then
   test_succeeded=false
 fi
 
