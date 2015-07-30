@@ -253,9 +253,15 @@ fi
 # Finally, run sed on target files
 # Space delimited list..
 for var in $EXPAND_SED_FILES; do
+  # If there is no bar ("|"), the entry is invalid; move on
+  if ! echo $var | "$GREP" '|' 1>/dev/null; then continue; fi
+
   # Separate out target file from the sed script to run on it
   target=$( echo $var | "$CUT" -d '|' -f 1)
   script=$( echo $var | "$CUT" -d '|' -f 2-)
+
+    # We need both to be defined, move on otherwise
+    if [[ -z $target ]] || [[ -z $script ]]; then continue; fi
 
   "$SED" -i "$target" -f "$script"
   
