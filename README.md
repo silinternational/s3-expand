@@ -103,3 +103,25 @@ yBO8IJ/homes/foo/special.tar|/home/foo/my_dir
 The wrapper script will use the provided key and secret to grab 
 s3://DXCmEdg4gb/data.tar and s3://yBO8IJ/homes/foo/special.tar, unpacking 
 them into /data and /home/foo/my_dir, respectively.
+
+Testing
+=======
+
+A simple shell testing framework is included in `tests` for verifying the
+operation of the wrapper. It is designed to be run from within a container as
+root; the included Dockerfile is for this purpose.
+
+Just create an file called `env.local` with contents similar to:
+
+    EXPAND_S3_KEY=OTGJTJBPGPXVHUKOUBTY
+    EXPAND_S3_SECRET=NUId1Ar6nnQ/ah4Y27q5bskVHxhJHPipvC3kEitb
+
+    S3_TEST_PATH=random-bucket-OyQ3Qu/randomfolder-xtyD2C
+
+Then, to run the tests, use these commands:
+
+    docker build -t s3-expand-testing .
+    docker run --rm -it --env-file env.local s3-expand-testing
+
+The S3 folder formed from the url `s3://$S3_TEST_PATH` will be used as a staging
+area for testing the wrapper modes that pull from S3.
