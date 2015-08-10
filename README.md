@@ -1,23 +1,47 @@
 s3-expand
 =========
 
-s3-expand
----------
-
 __Note: Documentation for this script is incomplete; it can do a bit more 
 than what is detailed here__
 
-`s3-expand` is a wrapper script, designed for use in a container. It provides
-functionality to generate and edit files by
-It can create files in the 
-container by extracting data from other environmental variables, and/or 
-pulling and unpacking tar archives from S3.
+`s3-expand` is a wrapper bash shell script, intended for use in a docker
+container. It provides functionality to generate and edit files:
 
-Operation is determined by the setting the following environmental variables. 
-If neither are set, the script merely just runs the main CMD.
+ * Directing the contents of environmental variables into files
+ * Pulling data from Amazon S3:
+   * Individual files
+   * Tar archives, which are extracted into a directory
+   * File synchronization
+ * Running `sed` on existing files
+
+Note: for local development you can pass in these environmental variables using
+docker's `--env-file` switch; see `ENV-FILE.example` for an example of what
+this file might look like.
+
+Usage
+=====
+
+    s3-expand <actual_cmd> [args ...]
+
+`actual_cmd` is exec'ed by the wrapper once it has completed its run.
+Operation is determined by the setting one or more of the following
+environmental variables. If none are set, the script exec's the `actual_cmd`.
+
+The wrapper was written under the assumption that it is run within a container
+as root, and so has arbitrary ability to create files and change their owners
+and modes. Consequently, it is possible that not everything will work correctly
+if it is run as another user.
 
   * `EXPAND_FILES`
   * `EXPAND_S3_TARS`
+  * `EXPAND_S3_FILES`
+  * `EXPAND_S3_FOLDERS`
+  * `EXPAND_SED_FOLDERS`
+
+Details on the workings of each below.
+
+`EXPAND_FILES`
+--------------
 
 The value of `EXPAND_FILES` must be a space-delimited list of key-value 
 pairs, each separated by an equals sign. For each pair, the key is the name 
@@ -40,22 +64,33 @@ So, as an example, suppose the following are set for the container:
     SPECIFIC=cd ~
 
 The wrapper script will then, when the container is started, overwrite 
-/etc/issue with "Linux, runnning in Docker!", create /home/foo/.bashrc with 
-contents "cd ~" (no newline at the end) and permissions 644 and the owner 
-user 'foo', and do nothing for /data/my_file, since FORGOT was not set.
+`/etc/issue` with "Linux, runnning in Docker!", create `/home/foo/.bashrc` with 
+contents "cd ~" (no newline at the end), permissions 644 and owner 
+user 'foo', and do nothing for `/data/my_file`, since FORGOT was not set.
 
+
+S3 Access
+---------
+
+Three modes are available for pulling data from Amazon S3: file, sync, and
+archive. Each require two other environmental variables to be set in order to
+work. They are:
+
+  * `EXPAND_S3_KEY`
+  * `EXPAND_S3_SECRET`
+
+They must be set to the AWS access key, and AWS secret key, respectively, which
+have sufficent permissions to access the specified S3 targets. After use, they
+will be scrubbed from the environment.
+
+`EXPAND_S3_TARS`
+----------------
 
 The value of `EXPAND_S3_TARS` must be a space-delimited list of key-value 
 pairs, each separated by a pipe (|). The key is the location of a tar archive 
 in S3, in the format `bucket/path`. The value is is the directory in which 
 the archive should be extracted. This target directory will be created if it 
 does not already exist.
-
-If set, `EXPAND_S3_TARS` requires two other environmental variables to be set 
-in order to work. They are:
-
-  * EXPAND_S3_KEY
-  * EXPAND_S3_SECRET
 
 So, for example, suppose the following are set for the container:
 
@@ -68,8 +103,3 @@ yBO8IJ/homes/foo/special.tar|/home/foo/my_dir
 The wrapper script will use the provided key and secret to grab 
 s3://DXCmEdg4gb/data.tar and s3://yBO8IJ/homes/foo/special.tar, unpacking 
 them into /data and /home/foo/my_dir, respectively.
-
-
-You can pass in these environmental variables using docker's `--env-file` 
-switch; see `ENV-FILE.example` for an example of what this file might look 
-like.
