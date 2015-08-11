@@ -1,9 +1,6 @@
 s3-expand
 =========
 
-__Note: Documentation for this script is incomplete; it can do a bit more 
-than what is detailed here__
-
 `s3-expand` is a wrapper bash shell script, intended for use in a docker
 container. It provides functionality to generate and edit files:
 
@@ -29,10 +26,10 @@ Operation is determined by the setting one or more of the following
 environmental variables. If none are set, the script exec's the `actual_cmd`.
 
   * `EXPAND_FILES`
+  * `EXPAND_SED_FILES`
   * `EXPAND_S3_TARS`
   * `EXPAND_S3_FILES`
   * `EXPAND_S3_FOLDERS`
-  * `EXPAND_SED_FOLDERS`
 
 Details on the workings of each are in the following sections.
 
@@ -73,6 +70,33 @@ The wrapper script will then, when the container is started, overwrite
 contents "cd ~" (no newline at the end), permissions 644 and owner 
 user 'foo', and do nothing for `/data/my_file`, since FORGOT was not set.
 
+`EXPAND_SED_FILES`
+------------------
+
+The value of `EXPAND_SED_FILES` must be a space-delimited list of key-value 
+pairs, each separated by a pipe (`|`). The key is the path to an existing file,
+while the value is the path to a sed script.
+
+`sed -i "<key>" -f "<value>"` will be run for every key-value pair.
+
+Suppose the following ENV variable is set for the container:
+
+    EXPAND_SED_FILES="/etc/issue|/data/issue.sed"
+
+Given that `/etc/issue` already exists, with contents:
+
+    Ubuntu 14.04.2 LTS \n \l
+    
+
+...and that `/data/issue.sed` has previously been placed into the container, with
+contents:
+
+    1s/$/ \n \t/
+
+The wrapper will run `sed`, and the result contents of `/etc/issue` will be:
+
+    Ubuntu 14.04.2 LTS \n \l \n \t
+    
 
 S3 Access
 ---------
