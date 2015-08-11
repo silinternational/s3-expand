@@ -16,6 +16,14 @@
 #       test. The exit value of the file is the result value of the test. If
 #       it is non-zero, the test is considered failed, and the output of the
 #       file (both stdout and stderror) is printed as the error message.
+#
+# FinishTests
+#     - Reports a summary of the tests that were run, and then exists with
+#       status of 1 if any failed, or 0 if all passed.
+#
+#       However, if any positional parameters are in scope when this file is
+#       sourced, FinishTests will instead act as a wrapper script, and exec
+#       those positional parameters.
 
 num_success=0
 num_fail=0
@@ -31,6 +39,8 @@ cat <<- EOF
 	${darkgreen}    Starting Tests     ${normal}
 	${darkgreen}=======================${normal}
 	EOF
+
+SAVE_FOR_LATER_JWGQL0O8="$@"
 
 function TestStart () {
     cat  <<-EOF
@@ -105,9 +115,13 @@ function FinishTests () {
 	$num_fail ${red}failed${normal} 
 	EOF
 
-  if [[ $num_fail != 0 ]]; then
-    exit 1
+  if [[ $SAVE_FOR_LATER_JWGQL0O8 ]]; then
+    exec "$SAVE_FOR_LATER_JWGQL0O8"
   else
-    exit 0
+    if [[ $num_fail != 0 ]]; then
+      exit 1
+    else
+      exit 0
+    fi
   fi
 }
