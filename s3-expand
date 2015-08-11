@@ -152,9 +152,9 @@ for var in $EXPAND_FILES; do
   fi
 
   # Unset the variable in the environment
-  export -n ${ev} EXPAND_FILES
+  export -n ${ev}
 done
-
+export -n EXPAND_FILES
 
 
 
@@ -242,10 +242,11 @@ if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; the
     "$S3CMD" sync -r s3://$object $targetfolder/
   done
 
-  # Remove the Credentials, Unset the Environment
+  # Remove the Credentials
   "$RM" ~/.s3cfg
-  export -n EXPAND_S3_KEY EXPAND_S3_SECRET EXPAND_S3_FILES EXPAND_S3_TARS EXPAND_S3_FOLDERS
 fi
+# Unset the Environment
+export -n EXPAND_S3_KEY EXPAND_S3_SECRET EXPAND_S3_FILES EXPAND_S3_TARS EXPAND_S3_FOLDERS
 
 
 
@@ -261,13 +262,14 @@ for var in $EXPAND_SED_FILES; do
   target=$( echo $var | "$CUT" -d '|' -f 1)
   script=$( echo $var | "$CUT" -d '|' -f 2-)
 
-    # We need both to be defined, move on otherwise
-    if [[ -z $target ]] || [[ -z $script ]]; then continue; fi
+  # We need both to be defined, move on otherwise
+  if [[ -z $target ]] || [[ -z $script ]]; then continue; fi
 
   "$SED" -i "$target" -f "$script"
-  
-  export -n EXPAND_SED_FILES
+
 done
+# Unset the Environment
+export -n EXPAND_SED_FILES
 
 
 
