@@ -5,7 +5,16 @@ if . ../check-s3-creds; then
   #   SEE MAN PAGE FOR S3CMD; TRAILING SLASHES ARE SIGNIFICANT
   s3cmd sync ./originals/ s3://"$S3_TEST_PATH"/s3-sync/
 
-  export EXPAND_S3_FOLDERS="$S3_TEST_PATH/s3-sync/|./comparedir $S3_TEST_PATH/s3-sync/|./newdir/comparedir $S3_TEST_PATH/s3-sync|./parent  $S3_TEST_PATH/s3-sync|./newdir/parent |./nonexist1 $S3_TEST_PATH/nonexist2| $S3_TEST_PATH/nonexist3 $S3_TEST_PATH/nonexist4/| $S3_TEST_PATH/nonexist5/"
+  EXPAND_S3_FOLDERS="  $S3_TEST_PATH/s3-sync/|./comparedir"
+  EXPAND_S3_FOLDERS+=" $S3_TEST_PATH/s3-sync/|./newdir/comparedir"
+  EXPAND_S3_FOLDERS+=" $S3_TEST_PATH/s3-sync|./parent"
+  EXPAND_S3_FOLDERS+="  $S3_TEST_PATH/s3-sync|./newdir/parent"
+  EXPAND_S3_FOLDERS+=" |./nonexist1"
+  EXPAND_S3_FOLDERS+=" $S3_TEST_PATH/nonexist2|"
+  EXPAND_S3_FOLDERS+=" $S3_TEST_PATH/nonexist3"
+  EXPAND_S3_FOLDERS+=" $S3_TEST_PATH/nonexist4/|"
+  EXPAND_S3_FOLDERS+=" $S3_TEST_PATH/nonexist5/"
+  export EXPAND_S3_FOLDERS
 
   if ! ../../s3-expand true; then
     test_succeeded=false
@@ -19,7 +28,17 @@ if . ../check-s3-creds; then
       fi
     done
 
-    for file in $(find . | grep -v '^\.$\|^./originals\|^./newdir$\|^./newdir/comparedir\|\|^./newdir/parent$\|^./newdir/parent/s3-sync\|^./s3-sync$\|^./parent$\|^./parent/s3-sync\|^./comparedir'); do
+       REGEX='^\.$'
+    REGEX+='\|^./originals'
+    REGEX+='\|^./s3-sync$'
+    REGEX+='\|^./newdir$'
+    REGEX+='\|^./newdir/comparedir'
+    REGEX+='\|^./newdir/parent$'
+    REGEX+='\|^./newdir/parent/s3-sync'
+    REGEX+='\|^./parent$'
+    REGEX+='\|^./parent/s3-sync'
+    REGEX+='\|^./comparedir'
+    for file in $(find . | grep -v "$REGEX"); do
       test_succeeded=false
         echo "ERROR: $file should not have been created."
     done

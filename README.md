@@ -143,6 +143,39 @@ The wrapper will extract the archives thus:
     s3://yBO8IJ/homes/foo/special.tar -> /home/foo/my_dir/a
                                       -> /home/foo/my_dir/b
                                       -> /home/foo/my_dir/c
+`EXPAND_S3_FOLDERS`
+-------------------
+
+The value of `EXPAND_S3_FOLDERS` must be a space-delimited list of key-value 
+pairs, each separated by a pipe (`|`). The key is the location of a folder in
+S3, in the format `bucket/path-to-folder`. The value is the path to a directory
+(which will be created if it does not already exist.
+
+If the key ends in a slash (`/`), the _contents_ of the S3 folder will be
+synchronized; if it does not end in slash, the S3 folder itself will be
+synchronized in the target directory
+
+Suppose the following ENV variable is set for the container (in addition to the
+S3 credentials):
+
+    EXPAND_S3_FILES="DXCmEdg4gb/proj|/data yBO8IJ/homes/foo/|/home/foo"
+
+Given that the folder layout in S3 is:
+
+    s3://DXCmEdg4gb/proj/Makefile
+    s3://DXCmEdg4gb/proj/source.c
+    s3://DXCmEdg4gb/proj/source.h
+
+    s3://yBO8IJ/homes/foo/.ssh/
+    s3://yBO8IJ/homes/foo/.ssh/authorized_keys
+
+The wrapper will synchronize thus:
+
+    s3://DXCmEdg4gb/proj/Makefile              -> /data/proj/Makefile
+    s3://DXCmEdg4gb/proj/source.c              -> /data/proj/source.c
+    s3://DXCmEdg4gb/proj/source.h              -> /data/proj/source.h
+
+    s3://yBO8IJ/homes/foo/.ssh/authorized_keys -> /home/foo/.ssh/authorized_keys
 
 Testing
 =======
