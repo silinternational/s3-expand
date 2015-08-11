@@ -54,7 +54,7 @@ if the referenced environmental variable is not set, that particular
 key-value pair will be ignored. You can also append `[mode|]`, 
 `[mode|owner]`, or `[|owner]` to the path to set the numerical file 
 permissions, and/or the file owner. Since newlines are not allowed in 
-environmental variables, the script will replace any ascii SUB character 
+environmental variables, the script will replace any ASCII SUB character 
 (`\032` or `\x1a`) in the the value of the referenced environmental variable 
 with a newline in the created file.
 
@@ -66,7 +66,7 @@ So, as an example, suppose the following are set for the container:
     SPECIFIC=cd ~
 
 The wrapper script will then, when the container is started, overwrite 
-`/etc/issue` with "Linux, runnning in Docker!", create `/home/foo/.bashrc` with 
+`/etc/issue` with "Linux, running in Docker!", create `/home/foo/.bashrc` with 
 contents "cd ~" (no newline at the end), permissions 644 and owner 
 user 'foo', and do nothing for `/data/my_file`, since FORGOT was not set.
 
@@ -93,7 +93,7 @@ contents:
 
     1s/$/ \n \t/
 
-The wrapper will run `sed`, and the result contents of `/etc/issue` will be:
+The wrapper will run `sed`, and the resulting contents of `/etc/issue` will be:
 
     Ubuntu 14.04.2 LTS \n \l \n \t
     
@@ -109,7 +109,7 @@ work. They are:
   * `EXPAND_S3_SECRET`
 
 They must be set to the AWS access key, and AWS secret key, respectively, which
-have sufficent permissions to access the specified S3 targets. After use, they
+have sufficient permissions to access the specified S3 targets. After use, they
 will be scrubbed from the environment.
 
 `EXPAND_S3_FILES`
