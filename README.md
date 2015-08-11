@@ -22,15 +22,11 @@ Usage
 =====
 
     s3-expand <actual_cmd> [args ...]
+    s3-expand -c <filename>
 
 `actual_cmd` is exec'ed by the wrapper once it has completed its run.
 Operation is determined by the setting one or more of the following
 environmental variables. If none are set, the script exec's the `actual_cmd`.
-
-The wrapper was written under the assumption that it is run within a container
-as root, and so has arbitrary ability to create files and change their owners
-and modes. Consequently, it is possible that not everything will work correctly
-if it is run as another user.
 
   * `EXPAND_FILES`
   * `EXPAND_S3_TARS`
@@ -38,14 +34,23 @@ if it is run as another user.
   * `EXPAND_S3_FOLDERS`
   * `EXPAND_SED_FOLDERS`
 
-Details on the workings of each below.
+Details on the workings of each are in the following sections.
+
+The wrapper was written under the assumption that it is run within a container
+as root, and so has arbitrary ability to create files and change their owners
+and modes. Consequently, it is possible that not everything will work correctly
+if it is run as another user.
+
+The second form runs the script as an conversion utility to translate all the
+newlines in a file to octal 032, which can then be placed into ENV variables for
+use with the `EXPAND_FILES` mode.
 
 `EXPAND_FILES`
 --------------
 
 The value of `EXPAND_FILES` must be a space-delimited list of key-value 
-pairs, each separated by an equals sign. For each pair, the key is the name 
-of a referenced environmental variable, and the value is the path to a new 
+pairs, each separated by an equals sign (`=`). For each pair, the key is the
+name of a referenced environmental variable, and the value is the path to a new
 file, whose contents will be the current value of the referenced variable. 
 All parent directories in the path will be created if they do not exist, and 
 if the referenced environmental variable is not set, that particular 
@@ -83,26 +88,61 @@ They must be set to the AWS access key, and AWS secret key, respectively, which
 have sufficent permissions to access the specified S3 targets. After use, they
 will be scrubbed from the environment.
 
+`EXPAND_S3_FILES`
+----------------
+
+The value of `EXPAND_S3_FILES` must be a space-delimited list of key-value 
+pairs, each separated by a pipe (`|`). The key is the location of a file in S3,
+in the format `bucket/path-to-file`. The value is the path where the file
+should be placed, either a filename, or a directory (if ending with a `/`).
+Parent directories will be created if they do not already exist.
+
+Suppose the following ENV variable is set for the container (in addition to the
+S3 credentials):
+
+    EXPAND_S3_FILES="DXCmEdg4gb/database.sql|/archive.sql yBO8IJ/homes/foo/authorized_keys|/home/foo/.ssh/"
+
+The wrapper will pull the files thus:
+
+    s3://DXCmEdg4gb/database.sql          -> /archive.sql
+    s3://yBO8IJ/homes/foo/authorized_keys -> /home/foo/.ssh/authorized_keys
+
 `EXPAND_S3_TARS`
 ----------------
 
 The value of `EXPAND_S3_TARS` must be a space-delimited list of key-value 
-pairs, each separated by a pipe (|). The key is the location of a tar archive 
-in S3, in the format `bucket/path`. The value is is the directory in which 
-the archive should be extracted. This target directory will be created if it 
-does not already exist.
+pairs, each separated by a pipe (`|`). The key is the location of a tar archive 
+in S3, in the format `bucket/path-to-archive`. The value is is the directory in
+which the archive should be extracted. This target directory will be created if
+it does not already exist.
 
-So, for example, suppose the following are set for the container:
+Suppose the following ENV variable is set for the container (in addition to the
+S3 credentials):
 
-    EXPAND_S3_TARS= DXCmEdg4gb/data.tar|/data 
-yBO8IJ/homes/foo/special.tar|/home/foo/my_dir
-    
-    EXPAND_S3_KEY=PHGCNQMRTHQMDROKAEA2
-    EXPAND_S3_SECRET=25FLQSI2P0BBLBOVUIST0W0NBM0ZG17MJV3AQVMH
+    EXPAND_S3_TARS="DXCmEdg4gb/data.tar|/data yBO8IJ/homes/foo/special.tar|/home/foo/my_dir/"
 
-The wrapper script will use the provided key and secret to grab 
-s3://DXCmEdg4gb/data.tar and s3://yBO8IJ/homes/foo/special.tar, unpacking 
-them into /data and /home/foo/my_dir, respectively.
+Given contents of `data.tar`:
+
+    toplevelfile
+    newdir/
+    newdir/foo
+    newdir/bar
+
+Given contents of `special.tar`:
+
+    a
+    b
+    c
+
+The wrapper will extract the archives thus:
+
+    s3://DXCmEdg4gb/data.tar          -> /data/toplevelfile
+                                      -> /data/newdir/foo
+                                      -> /data/newdir/bar
+
+    s3://yBO8IJ/homes/foo/special.tar -> /home/foo/my_dir/a
+                                      -> /home/foo/my_dir/b
+                                      -> /home/foo/my_dir/c
 
 Testing
 =======
@@ -121,7 +161,7 @@ Just create an file called `env.local` with contents similar to:
 Then, to run the tests, use these commands:
 
     docker build -t s3-expand-testing .
-    docker run --rm -it --env-file env.local s3-expand-testing
+    docker run --rm -it --env-file env.local s3-expand-testing bash
 
 The S3 folder formed from the url `s3://$S3_TEST_PATH` will be used as a staging
 area for testing the wrapper modes that pull from S3.
