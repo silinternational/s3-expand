@@ -306,19 +306,37 @@ if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; the
 
     # Separate out the s3 source from the local destination
     object=$( echo $var | "$CUT" -d '|' -f 1)
-    targetfolder=$( echo $var | "$CUT" -d '|' -f 2-)
+    target=$( echo $var | "$CUT" -d '|' -f 2-)
 
     # We need both to be defined, move on otherwise
-    if [[ -z $object ]] || [[ -z $targetfolder ]]; then
+    if [[ -z $object ]] || [[ -z $target ]]; then
       echo "WARN: syntax error in EXPAND_S3_FOLDERS"
       continue;
     fi
+
+    #Extract the metadata, if it is set
+    meta=$( "$BASENAME" $target | "$GREP" -o '\[.*\]$' | "$SED" -e 's/^\[//' -e 's/\]$//' )
+    targetfolder=$( echo $target | "$SED" 's/\(.*\)\[.*\]$/\1/' )
+
+    owner="$meta"
+
+    # Targetfolder must be defined, move on otherwise
+    if [[ -z $targetfolder ]]; then
+      echo "WARN: syntax error in EXPAND_S3_TARS"
+      continue;
+    fi
+
 
     # Create the containing directory, if necessary
     "$MKDIR" -p $targetfolder/
 
     # Run the extraction
     "$S3CMD" sync -r s3://$object $targetfolder/
+
+    # Set the file and directory ownership, if applicable
+    if [[ -n $owner ]]; then
+      "$CHOWN" -R $owner $targetfolder
+    fi
   done
 
   # Remove the Credentials

@@ -182,6 +182,9 @@ If the key ends in a slash (`/`), the _contents_ of the S3 folder will be
 synchronized; if it does not end in slash, the S3 folder itself will be
 synchronized in the target directory
 
+You can also append `[owner]` to the expansion directory path to set the
+ownership of all the files in that directory.
+
 Suppose the following ENV variable is set for the container (in addition to the
 S3 credentials):
 
