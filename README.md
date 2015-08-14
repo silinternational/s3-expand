@@ -120,6 +120,8 @@ pairs, each separated by a pipe (`|`). The key is the location of a file in S3,
 in the format `bucket/path-to-file`. The value is the path where the file
 should be placed, either a filename, or a directory (if ending with a `/`).
 Parent directories will be created if they do not already exist.
+You can also append `[mode,]`, `[mode,owner]`, or `[,owner]` to the path to set
+the numerical file permissions, and/or the file owner.
 
 Suppose the following ENV variable is set for the container (in addition to the
 S3 credentials):
@@ -138,7 +140,8 @@ The value of `EXPAND_S3_TARS` must be a space-delimited list of key-value
 pairs, each separated by a pipe (`|`). The key is the location of a tar archive 
 in S3, in the format `bucket/path-to-archive`. The value is is the directory in
 which the archive should be extracted. This target directory will be created if
-it does not already exist.
+it does not already exist. You can also append `[owner]` to the expansion
+directory path to set the ownership of all the files in that directory.
 
 Suppose the following ENV variable is set for the container (in addition to the
 S3 credentials):
