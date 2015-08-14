@@ -1,17 +1,17 @@
 #!/bin/bash
 # Defines useful functions and runs tests
 
-# TestStart
+# TestStart <name>
 #     - Call this before a test, passing the test name as the first argument
 #
-# TestEnd
+# TestEnd <status> [msgword1 ...]
 #     - Call this at the end of a test, with the exit status as the first
 #       argument, and a message for the remaining arguments
 #
 #       ASCII SUB characters (032) in the message will be replaced with
 #       newlines.
 #
-# Test
+# Test <file> [<file> ...]
 #     - Sources the filenames passed as arguments, running each as a single
 #       test. The exit value of the file is the result value of the test. If
 #       it is non-zero, the test is considered failed, and the output of the
@@ -24,6 +24,19 @@
 #       However, if any positional parameters are in scope when this file is
 #       sourced, FinishTests will instead act as a wrapper script, and exec
 #       those positional parameters.
+
+
+#
+# Convenience functions for the actual tests:
+#
+#   test_check-perms <var_name> <filename> <uid> <gid> <mode>
+#     - Checks the ownership and mode of the specified file. Sets the variable
+#       named <var_name> to 'false' if the ownerships and modes differ from
+#       from what is specified, and leaves its current value alone if the
+#       ownerships and modes match.
+#
+#       An error message will be printed to stdout if ownerships or modes are
+#       incorrect.
 
 num_success=0
 num_fail=0
@@ -123,5 +136,44 @@ function FinishTests () {
     else
       exit 0
     fi
+  fi
+}
+
+
+## Convenience Functions for Tests:
+function test_check-perms () {
+  for v in var_name file uid gid mode; do
+    declare $v="$1"
+
+    if [[ -z $1 ]]; then
+      echo "Test Script Error!: $v unset in test_check-perms()"
+      exit 1
+    fi
+
+    shift 1
+  done
+
+  declare test_succeeded=$var_name
+
+  actual_uid=$(stat -c '%u' $file)
+  actual_gid=$(stat -c '%g' $file)
+  actual_mode=$(stat -c '%a' $file)
+
+  if [[ $actual_uid != $uid ]]; then
+    declare -g $test_succeeded=false
+    echo "$file was not set to the correct user; should be $uid, is $actual_uid"
+    echo
+  fi
+
+  if [[ $actual_gid != $gid ]]; then
+    declare -g $test_succeeded=false
+    echo "$file was not set to the correct group; should be $gid, is $actual_gid"
+    echo
+  fi
+
+  if [[ $actual_mode != $mode ]]; then
+    declare -g $test_succeeded=false
+    echo "$file was not set to the correct mode; should be $mode, is $actual_mode"
+    echo
   fi
 }

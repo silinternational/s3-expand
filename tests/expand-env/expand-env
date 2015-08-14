@@ -37,59 +37,27 @@ if [[ -a ./forgot ]]; then
   echo
 fi
 
-# Test for permissions
-function check-perms () {
-  file=$1
-  uid=$2
-  gid=$3
-  mode=$4
 
-  actual_uid=$(stat -c '%u' $file)
-  actual_gid=$(stat -c '%g' $file)
-  actual_mode=$(stat -c '%a' $file)
-
-  declare -g test_succeeded
-
-  if [[ $actual_uid != $uid ]]; then
-    test_succeeded=false
-    echo "$file was changed to a wrong uid; should be $uid, is $actual_uid"
-    echo
-  fi
-
-  if [[ $actual_gid != $gid ]]; then
-    test_succeeded=false
-    echo "$file was changed to a wrong gid; should be $gid, is $actual_gid"
-    echo
-  fi
-
-  if [[ $actual_mode != $mode ]]; then
-    test_succeeded=false
-    echo "$file was set to a wrong mode; should be $mode, is $actual_mode"
-    echo
-  fi
-}
-
-default_uid=$(id -u)
-default_gid=$(id -g)
+uid=$(id -u)
+gid=$(id -g)
 
 touch a
-default_mode=$(stat -c%a a)
+mode=$(stat -c%a a)
 rm a
 
 mkdir a
-default_dmode=$(stat -c%a a)
+dmode=$(stat -c%a a)
 rmdir a
 
-# check-perms file uid gid mode
-check-perms "./simple"      $default_uid $default_gid $default_mode
-check-perms "./newdir"      $default_uid $default_gid $default_dmode
-check-perms "./newdir/luna" $default_uid $default_gid $default_mode
-check-perms "./newlines"    $default_uid $default_gid $default_mode
-check-perms "./perms1"      $default_uid $default_gid 464
-check-perms "./perms2"      23           $default_gid $default_mode
-check-perms "./perms3"      24           25           $default_mode
-check-perms "./perms4"      26           $default_gid 765
-check-perms "./perms5"      27           28           341
+test_check-perms test_succeeded "./simple"      $uid $gid $mode
+test_check-perms test_succeeded "./newdir"      $uid $gid $dmode
+test_check-perms test_succeeded "./newdir/luna" $uid $gid $mode
+test_check-perms test_succeeded "./newlines"    $uid $gid $mode
+test_check-perms test_succeeded "./perms1"      $uid $gid 464
+test_check-perms test_succeeded "./perms2"      23   $gid $mode
+test_check-perms test_succeeded "./perms3"      24   25   $mode
+test_check-perms test_succeeded "./perms4"      26   $gid 765
+test_check-perms test_succeeded "./perms5"      27   28   341
 
 # Finally, test for contents, after resetting the modes
 for file in ./simple ./newdir/luna ./newlines ./perms{1,2,3,4,5}; do
