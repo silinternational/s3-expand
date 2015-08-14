@@ -49,9 +49,8 @@ if . ../check-s3-creds; then
     uid=$(id -u)         
     gid=$(id -g)         
 
-    touch a
-    mode=$(stat -c%a a)
-    rm a
+    # Apparently, s3cmd will always create files with mode 644
+    mode=644
                      
     for dir in ./comparedir ./newdir/comparedir ./parent/s3-sync ./newdir/parent/s3-sync; do 
       for file in $(ls $dir);do
