@@ -48,6 +48,10 @@ if . ../check-s3-creds; then
     # Find the defaults:
     uid=$(id -u)         
     gid=$(id -g)         
+
+    touch a
+    mode=$(stat -c%a a)
+    rm a
                      
     for dir in ./comparedir ./newdir/comparedir ./parent/s3-sync ./newdir/parent/s3-sync; do 
       for file in $(ls $dir);do
@@ -63,7 +67,6 @@ if . ../check-s3-creds; then
 	EOF
         fi
 
-        mode=$(stat -c%a "./originals/$file")
         test_check-perms test_succeeded "$dir/$file" $uid $gid $mode
       done
     done
@@ -82,7 +85,6 @@ if . ../check-s3-creds; then
 	EOF
         fi
 
-        mode=$(stat -c%a "./originals/$file")
         test_check-perms test_succeeded "$dir/$file" 23 24 $mode
       done
     done
