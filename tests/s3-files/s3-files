@@ -10,6 +10,10 @@ if . ../check-s3-creds; then
   EXPAND_S3_FILES=" $S3_TEST_PATH/testfileA|./fileA"
   EXPAND_S3_FILES+=" $S3_TEST_PATH/testfileB|./newdir/fileB"
   EXPAND_S3_FILES+=" $S3_TEST_PATH/testfileC|./newdir2/"
+  EXPAND_S3_FILES+=" $S3_TEST_PATH/testfileA|./pfileA1[123]"
+  EXPAND_S3_FILES+=" $S3_TEST_PATH/testfileA|./pfileA2[456,23.24]"
+  EXPAND_S3_FILES+=" $S3_TEST_PATH/testfileA|./pfileA3[,25]"
+  EXPAND_S3_FILES+=" $S3_TEST_PATH/testfileA|./pfileA4[,]"
   EXPAND_S3_FILES+=" |./nonexist1"
   EXPAND_S3_FILES+=" $S3_TEST_PATH/nonexist2|"
   EXPAND_S3_FILES+=" $S3_TEST_PATH/nonexist3"
@@ -36,6 +40,11 @@ if . ../check-s3-creds; then
     REGEX+='\|^./newdir/fileB$'
     REGEX+='\|^./newdir2$'
     REGEX+='\|^./newdir2/testfileC$'
+    REGEX+='\|^./pfileA1$'
+    REGEX+='\|^./pfileA2$'
+    REGEX+='\|^./pfileA3$'
+    REGEX+='\|^./pfileA4$'
+    REGEX+='\|^./newdir$'
     REGEX+='\|^./s3-files$'
     for file in $(find . | grep -v $REGEX); do
       test_succeeded=false
@@ -67,6 +76,28 @@ if . ../check-s3-creds; then
 
 	EOF
     fi
+
+      # Check Permissions
+      uid=$(id -u)
+      gid=$(id -g)
+
+      touch a
+      mode=$(stat -c%a a)
+      rm a
+
+      mkdir a
+      dmode=$(stat -c%a a)
+      rmdir a
+
+      test_check-perms test_succeeded "./fileA"             $uid $gid $mode
+      test_check-perms test_succeeded "./newdir/"           $uid $gid $dmode
+      test_check-perms test_succeeded "./newdir/fileB"      $uid $gid $mode
+      test_check-perms test_succeeded "./newdir2/"          $uid $gid $dmode
+      test_check-perms test_succeeded "./newdir2/testfileC" $uid $gid $mode
+      test_check-perms test_succeeded "./pfileA1"           $uid $gid 123
+      test_check-perms test_succeeded "./pfileA2"           23   24   456
+      test_check-perms test_succeeded "./pfileA3"           25   $gid $mode
+      test_check-perms test_succeeded "./pfileA4"           $uid $gid $mode
   fi
 else
   test_succeeded=false

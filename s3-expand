@@ -248,13 +248,31 @@ if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; the
 
     # Separate out the s3 source from the local destination
     object=$( echo $var | "$CUT" -d '|' -f 1)
-    targetfile=$( echo $var | "$CUT" -d '|' -f 2-)
+    target=$( echo $var | "$CUT" -d '|' -f 2-)
 
     # We need both to be defined, move on otherwise
-    if [[ -z $object ]] || [[ -z $targetfile ]]; then
+    if [[ -z $object ]] || [[ -z $target ]]; then
       echo "WARN: syntax error in EXPAND_S3_FILES"
       continue;
     fi
+
+    #Extract the metadata, if it is set
+    meta=$( "$BASENAME" $target | "$GREP" -o '\[.*\]$' | "$SED" -e 's/^\[//' -e 's/\]$//' )
+    targetfile=$( echo $target | "$SED" 's/\(.*\)\[.*\]$/\1/' )
+
+    perms=$( echo $meta | "$CUT" -d ',' -f 1)
+    if echo $meta | "$GREP" ',' 1>/dev/null; then
+      owner=$( echo $meta | "$CUT" -d ',' -f 2-)
+    else
+      owner=""
+    fi
+
+    # Targetdir must be defined, move on otherwise
+    if [[ -z $targetfile ]]; then
+      echo "WARN: syntax error in EXPAND_S3_FILES"
+      continue;
+    fi
+
 
     # Create the containing directory, if necessary
     if [[ $targetfile =~ /$ ]]; then
@@ -265,6 +283,16 @@ if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; the
 
     # Run the extraction
     "$S3CMD" --force get s3://$object $targetfile
+
+    # Set the file's permissions, if applicable
+    if [[ -n $perms ]]; then
+      "$CHMOD" $perms $targetfile
+    fi
+
+    # Set the file's owner, if applicable
+    if [[ -n $owner ]]; then
+      "$CHOWN" $owner $targetfile
+    fi
   done
 
   # Pull Folders from S3 (trailing slash = just the contents, not the folder itself)
