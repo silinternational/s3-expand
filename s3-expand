@@ -53,6 +53,8 @@ function cmd-check () {
   fi
 }
 
+# Standard regular expressions
+REGEX_CHECK_MODE='^[0-7]\{1,4\}$'
 
 # Ensure that we have the basics installed
 cmd-check-require CAT cat
@@ -134,7 +136,7 @@ for var in $EXPAND_FILES; do
   fi
 
   # Sanity Check the passed permissions
-  if [[ -n $perms ]] && ! [[ $perms =~ ^[01234567]+$ ]]; then
+  if [[ -n $perms ]] && ! [[ $perms =~ $REGEX_CHECK_MODE ]]; then
     echo "WARN: \`$perms' is not a valid file permission"
   fi
 
