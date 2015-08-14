@@ -110,6 +110,12 @@ for var in $EXPAND_FILES; do
   target=$( echo $var | "$CUT" -d '=' -f 2- )
   basedir=$( "$DIRNAME" $target )
 
+  # We need both to be defined, move on otherwise
+  if [[ -z $ev ]] || [[ -z $target ]]; then
+   echo "WARN: syntax error in EXPAND_FILES"
+    continue;
+  fi
+
   #Extract the metadata, if it is set
   meta=$( "$BASENAME" $target | "$GREP" -o '\[.*\]$' | "$SED" -e 's/^\[//' -e 's/\]$//' )
   file=$( echo $target | "$SED" 's/\(.*\)\[.*\]$/\1/' )
@@ -121,10 +127,15 @@ for var in $EXPAND_FILES; do
     owner=""
   fi
 
+  # File must be defined, move on otherwise
+  if [[ -z $file ]]; then
+   echo "WARN: syntax error in EXPAND_FILES"
+    continue;
+  fi
+
   # Sanity Check the passed permissions
   if [[ -n $perms ]] && ! [[ $perms =~ ^[01234567]+$ ]]; then
-    echo "ERROR: \`$perms' is not a valid file permission"
-    exit 1
+    echo "WARN: \`$perms' is not a valid file permission"
   fi
 
 
@@ -135,8 +146,10 @@ for var in $EXPAND_FILES; do
   fi
 
 
-  # Create the parent directory
-  "$MKDIR" -p $basedir
+  # Create the parent directory, if applicable
+  if [[ -n $basedir ]]; then
+    "$MKDIR" -p $basedir
+  fi
 
   # Dump the value to the named file, running the conversion
   echo -n ${!ev} | "$TR" "\32" "\n" > $file
@@ -173,14 +186,33 @@ if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; the
   # Space delimited list..
   for var in $EXPAND_S3_TARS; do
     # If there is no bar ("|"), the entry is invalid; move on
-    if ! echo $var | "$GREP" '|' 1>/dev/null; then continue; fi
+    if ! echo $var | "$GREP" '|' 1>/dev/null; then
+      echo "WARN: syntax error in EXPAND_S3_TARS ; missing |"
+      continue;
+    fi
 
     # Separate out the tarball from its unpacking destination
     object=$( echo $var | "$CUT" -d '|' -f 1)
-    targetdir=$( echo $var | "$CUT" -d '|' -f 2-)
+    target=$( echo $var | "$CUT" -d '|' -f 2-)
 
     # We need both to be defined, move on otherwise
-    if [[ -z $object ]] || [[ -z $targetdir ]]; then continue; fi
+    if [[ -z $object ]] || [[ -z $target ]]; then
+      echo "WARN: syntax error in EXPAND_S3_TARS"
+      continue;
+    fi
+
+    #Extract the metadata, if it is set
+    meta=$( "$BASENAME" $target | "$GREP" -o '\[.*\]$' | "$SED" -e 's/^\[//' -e 's/\]$//' )
+    targetdir=$( echo $target | "$SED" 's/\(.*\)\[.*\]$/\1/' )
+
+    owner="$meta"
+
+    # Targetdir must be defined, move on otherwise
+    if [[ -z $targetdir ]]; then
+      echo "WARN: syntax error in EXPAND_S3_TARS"
+      continue;
+    fi
+
 
     # Create a temporary filename for the tar
     temp_tar=$("$MKTEMP" -u)".tar"
@@ -194,6 +226,11 @@ if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; the
     # Untar it
     "$TAR" xf "$temp_tar" -C $targetdir
 
+    # Set the file and directory ownership, if applicable
+    if [[ -n $owner ]]; then
+      "$CHOWN" -R $owner $targetdir
+    fi
+
     # Clean Up the original tarball
     "$RM" "$temp_tar"
   done
@@ -202,14 +239,20 @@ if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; the
   # Space delimited list..
   for var in $EXPAND_S3_FILES; do
     # If there is no bar ("|"), the entry is invalid; move on
-    if ! echo $var | "$GREP" '|' 1>/dev/null; then continue; fi
+    if ! echo $var | "$GREP" '|' 1>/dev/null; then
+      echo "WARN: syntax error in EXPAND_S3_FILES; missing |"
+      continue;
+    fi
 
     # Separate out the s3 source from the local destination
     object=$( echo $var | "$CUT" -d '|' -f 1)
     targetfile=$( echo $var | "$CUT" -d '|' -f 2-)
 
     # We need both to be defined, move on otherwise
-    if [[ -z $object ]] || [[ -z $targetfile ]]; then continue; fi
+    if [[ -z $object ]] || [[ -z $targetfile ]]; then
+      echo "WARN: syntax error in EXPAND_S3_FILES"
+      continue;
+    fi
 
     # Create the containing directory, if necessary
     if [[ $targetfile =~ /$ ]]; then
@@ -226,14 +269,20 @@ if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; the
   # Space delimited list..
   for var in $EXPAND_S3_FOLDERS; do
     # If there is no bar ("|"), the entry is invalid; move on
-    if ! echo $var | "$GREP" '|' 1>/dev/null; then continue; fi
+    if ! echo $var | "$GREP" '|' 1>/dev/null; then
+      echo "WARN: syntax error in EXPAND_S3_FOLDERS; missing |"
+      continue;
+    fi
 
     # Separate out the s3 source from the local destination
     object=$( echo $var | "$CUT" -d '|' -f 1)
     targetfolder=$( echo $var | "$CUT" -d '|' -f 2-)
 
     # We need both to be defined, move on otherwise
-    if [[ -z $object ]] || [[ -z $targetfolder ]]; then continue; fi
+    if [[ -z $object ]] || [[ -z $targetfolder ]]; then
+      echo "WARN: syntax error in EXPAND_S3_FOLDERS"
+      continue;
+    fi
 
     # Create the containing directory, if necessary
     "$MKDIR" -p $targetfolder/
@@ -256,14 +305,20 @@ export -n EXPAND_S3_KEY EXPAND_S3_SECRET EXPAND_S3_FILES EXPAND_S3_TARS EXPAND_S
 # Space delimited list..
 for var in $EXPAND_SED_FILES; do
   # If there is no bar ("|"), the entry is invalid; move on
-  if ! echo $var | "$GREP" '|' 1>/dev/null; then continue; fi
+  if ! echo $var | "$GREP" '|' 1>/dev/null; then
+    echo "WARN: syntax error in EXPAND_SED_FILES; missing |"
+    continue;
+  fi
 
   # Separate out target file from the sed script to run on it
   target=$( echo $var | "$CUT" -d '|' -f 1)
   script=$( echo $var | "$CUT" -d '|' -f 2-)
 
   # We need both to be defined, move on otherwise
-  if [[ -z $target ]] || [[ -z $script ]]; then continue; fi
+  if [[ -z $target ]] || [[ -z $script ]]; then
+    echo "WARN: syntax error in EXPAND_SED_FILES"
+    continue;
+  fi
 
   "$SED" -i "$target" -f "$script"
 
