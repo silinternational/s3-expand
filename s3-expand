@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Wrapper script to build files using ENV variables
 #set -x
 
@@ -18,7 +18,7 @@ function usage () {
   echo ""
 }
 
-function __cmd-check () {
+function __cmd_check () {
   name=$1
   shift 1
 
@@ -32,10 +32,10 @@ function __cmd-check () {
   done
 }
 
-function cmd-check-require () {
+function cmd_check_require () {
   name=$1
 
-  __cmd-check "$@"
+  __cmd_check "$@"
 
   if ! [[ ${!name} ]]; then
     echo "ERROR: no \`$1' equivalent found in path"
@@ -43,10 +43,10 @@ function cmd-check-require () {
   fi
 }
 
-function cmd-check () {
+function cmd_check () {
   name=$1
 
-  __cmd-check "$@"
+  __cmd_check "$@"
 
   if ! [[ ${!name} ]]; then
     echo "WARNING: no \`$1' equivalent found in path"
@@ -57,19 +57,19 @@ function cmd-check () {
 REGEX_CHECK_MODE='^[0-7]\{1,4\}$'
 
 # Ensure that we have the basics installed
-cmd-check-require CAT cat
-cmd-check-require TR tr
-cmd-check-require CUT cut
-cmd-check-require DIRNAME dirname
-cmd-check-require BASENAME basename
-cmd-check-require GREP grep
-cmd-check-require SED sed
-cmd-check-require CHOWN chown 
-cmd-check-require CHMOD chmod
-cmd-check-require MKDIR mkdir
-cmd-check-require TAR tar
-cmd-check-require RM rm
-cmd-check-require MKTEMP mktemp
+cmd_check_require CAT cat
+cmd_check_require TR tr
+cmd_check_require CUT cut
+cmd_check_require DIRNAME dirname
+cmd_check_require BASENAME basename
+cmd_check_require GREP grep
+cmd_check_require SED sed
+cmd_check_require CHOWN chown 
+cmd_check_require CHMOD chmod
+cmd_check_require MKDIR mkdir
+cmd_check_require TAR tar
+cmd_check_require RM rm
+cmd_check_require MKTEMP mktemp
 
 # Need to have SOME arguments
 if [[ $# < 1 ]]; then
@@ -174,7 +174,7 @@ export -n EXPAND_FILES
 
 
 
-cmd-check S3CMD s3cmd
+cmd_check S3CMD s3cmd
 # Check for EXPAND_S3_KEY and EXPAND_S3_SECRET in the environment, useless otherwise
 if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; then
   # Configure the credentials
