@@ -1,8 +1,8 @@
-#!/bin/bash
+#!/bin/sh
 # Wrapper script to build files using ENV variables
 #set -x
 
-function usage () {
+usage () {
   echo "Usage: $0 command [args] ..."
   echo "       $0 -c <filename>"
   echo ""
@@ -18,7 +18,7 @@ function usage () {
   echo ""
 }
 
-function __cmd-check () {
+__cmd_check () {
   name=$1
   shift 1
 
@@ -26,30 +26,28 @@ function __cmd-check () {
   # then define the named variable with its binary path
   for cmd in "$@"; do
     if hash "$cmd" 1>/dev/null 2>/dev/null; then
-      declare -g $name="$cmd"
-      return
+      eval $name="$cmd"
+      return 0
     fi
   done
+
+  return 1
 }
 
-function cmd-check-require () {
+cmd_check_require () {
   name=$1
 
-  __cmd-check "$@"
-
-  if ! [[ ${!name} ]]; then
-    echo "ERROR: no \`$1' equivalent found in path"
+  if ! __cmd_check "$@"; then
+    echo "ERROR: no \`$name' equivalent found in path"
     exit 1
   fi
 }
 
-function cmd-check () {
+cmd_check () {
   name=$1
 
-  __cmd-check "$@"
-
-  if ! [[ ${!name} ]]; then
-    echo "WARNING: no \`$1' equivalent found in path"
+  if ! __cmd_check "$@"; then
+    echo "WARNING: no \`$name' equivalent found in path"
   fi
 }
 
@@ -57,29 +55,30 @@ function cmd-check () {
 REGEX_CHECK_MODE='^[0-7]\{1,4\}$'
 
 # Ensure that we have the basics installed
-cmd-check-require CAT cat
-cmd-check-require TR tr
-cmd-check-require CUT cut
-cmd-check-require DIRNAME dirname
-cmd-check-require BASENAME basename
-cmd-check-require GREP grep
-cmd-check-require SED sed
-cmd-check-require CHOWN chown 
-cmd-check-require CHMOD chmod
-cmd-check-require MKDIR mkdir
-cmd-check-require TAR tar
-cmd-check-require RM rm
-cmd-check-require MKTEMP mktemp
+cmd_check_require EXPR expr 
+cmd_check_require CAT cat
+cmd_check_require TR tr
+cmd_check_require CUT cut
+cmd_check_require DIRNAME dirname
+cmd_check_require BASENAME basename
+cmd_check_require GREP grep
+cmd_check_require SED sed
+cmd_check_require CHOWN chown 
+cmd_check_require CHMOD chmod
+cmd_check_require MKDIR mkdir
+cmd_check_require TAR tar
+cmd_check_require RM rm
+cmd_check_require MKTEMP mktemp
 
 # Need to have SOME arguments
-if [[ $# < 1 ]]; then
+if "$EXPR" $# "<" 1 1>/dev/null 2>/dev/null; then
   usage
   exit 1
 fi
 
 # Catch the Special Mode switches
-if [[ $1 = '-c' ]]; then
-  if [[ -z $2 ]]; then
+if [ "$1" = '-c' ]; then
+  if [ -z "$2" ]; then
     echo "ERROR: -c requires an argument"
     echo ""
     usage
@@ -92,7 +91,7 @@ fi
 
 # Any other thing that looks like a switch will be passed to as an argument to `exec'.
 # We don't want this.
-if [[ $1 =~ ^- ]]; then
+if "$EXPR" match "$1" '^-' 1>/dev/null 2>/dev/null; then
   echo "ERROR: \`$1' is not a valid switch"
   echo ""
   usage
@@ -113,7 +112,7 @@ for var in $EXPAND_FILES; do
   basedir=$( "$DIRNAME" $target )
 
   # We need both to be defined, move on otherwise
-  if [[ -z $ev ]] || [[ -z $target ]]; then
+  if [ -z "$ev" ] || [ -z "$target" ]; then
    echo "WARN: syntax error in EXPAND_FILES"
     continue;
   fi
@@ -130,53 +129,55 @@ for var in $EXPAND_FILES; do
   fi
 
   # File must be defined, move on otherwise
-  if [[ -z $file ]]; then
+  if [ -z "$file" ]; then
    echo "WARN: syntax error in EXPAND_FILES"
     continue;
   fi
 
   # Sanity Check the passed permissions
-  if [[ -n $perms ]] && ! [[ $perms =~ $REGEX_CHECK_MODE ]]; then
+  if [ $perms ] && ! "$EXPR" match "$perms" "$REGEX_CHECK_MODE" 1>/dev/null 2>/dev/null; then
     echo "WARN: \`$perms' is not a valid file permission"
   fi
 
 
   # If the referenced variable doesn't exist then skip this entry
-  if [ "x${!ev}" = "x" ];then
+  if eval [ \"x\$\{$ev\}\" = \"x\" ]
+  then
     echo "WARN: referenced variable named \`$ev' was not found in the environment"
     continue
   fi
 
 
   # Create the parent directory, if applicable
-  if [[ -n $basedir ]]; then
+  if [ $basedir ]; then
     "$MKDIR" -p $basedir
   fi
 
   # Dump the value to the named file, running the conversion
-  echo -n ${!ev} | "$TR" "\32" "\n" > $file
+  cmd="echo -n \${$ev}"
+  eval $cmd | "$TR" "\32" "\n" > "$file"
 
   # Set the file's permissions, if applicable
-  if [[ -n $perms ]]; then
+  if [ $perms ]; then
     "$CHMOD" $perms $file
   fi
 
   # Set the file's owner, if applicable
-  if [[ -n $owner ]]; then
+  if [ $owner ]; then
     "$CHOWN" $owner $file
   fi
 
   # Unset the variable in the environment
-  export -n ${ev}
+  unset ${ev}
 done
-export -n EXPAND_FILES
+unset EXPAND_FILES
 
 
 
 
-cmd-check S3CMD s3cmd
+cmd_check S3CMD s3cmd
 # Check for EXPAND_S3_KEY and EXPAND_S3_SECRET in the environment, useless otherwise
-if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; then
+if [ $S3CMD ] && [ $EXPAND_S3_KEY ] && [ $EXPAND_S3_SECRET ]; then
   # Configure the credentials
   "$CAT" > ~/.s3cfg <<-EOF
 	[default]
@@ -198,7 +199,7 @@ if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; the
     target=$( echo $var | "$CUT" -d '|' -f 2-)
 
     # We need both to be defined, move on otherwise
-    if [[ -z $object ]] || [[ -z $target ]]; then
+    if [ -z "$object" ] || [ -z "$target" ]; then
       echo "WARN: syntax error in EXPAND_S3_TARS"
       continue;
     fi
@@ -210,7 +211,7 @@ if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; the
     owner="$meta"
 
     # Targetdir must be defined, move on otherwise
-    if [[ -z $targetdir ]]; then
+    if [ -z "$targetdir" ]; then
       echo "WARN: syntax error in EXPAND_S3_TARS"
       continue;
     fi
@@ -229,7 +230,7 @@ if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; the
     "$TAR" xf "$temp_tar" -C $targetdir
 
     # Set the file and directory ownership, if applicable
-    if [[ -n $owner ]]; then
+    if [ $owner ]; then
       "$CHOWN" -R $owner $targetdir
     fi
 
@@ -251,7 +252,7 @@ if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; the
     target=$( echo $var | "$CUT" -d '|' -f 2-)
 
     # We need both to be defined, move on otherwise
-    if [[ -z $object ]] || [[ -z $target ]]; then
+    if [ -z "$object" ] || [ -z "$target" ]; then
       echo "WARN: syntax error in EXPAND_S3_FILES"
       continue;
     fi
@@ -268,14 +269,14 @@ if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; the
     fi
 
     # Targetdir must be defined, move on otherwise
-    if [[ -z $targetfile ]]; then
+    if [ -z "$targetfile" ]; then
       echo "WARN: syntax error in EXPAND_S3_FILES"
       continue;
     fi
 
 
     # Create the containing directory, if necessary
-    if [[ $targetfile =~ /$ ]]; then
+    if "$EXPR" match "$targetfile" '.*/$'; then
       "$MKDIR" -p $targetfile
     else
       "$MKDIR" -p $("$DIRNAME" $targetfile)
@@ -285,12 +286,12 @@ if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; the
     "$S3CMD" --force get s3://$object $targetfile
 
     # Set the file's permissions, if applicable
-    if [[ -n $perms ]]; then
+    if [ $perms ]; then
       "$CHMOD" $perms $targetfile
     fi
 
     # Set the file's owner, if applicable
-    if [[ -n $owner ]]; then
+    if [ $owner ]; then
       "$CHOWN" $owner $targetfile
     fi
   done
@@ -309,7 +310,7 @@ if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; the
     target=$( echo $var | "$CUT" -d '|' -f 2-)
 
     # We need both to be defined, move on otherwise
-    if [[ -z $object ]] || [[ -z $target ]]; then
+    if [ -z "$object" ] || [ -z "$target" ]; then
       echo "WARN: syntax error in EXPAND_S3_FOLDERS"
       continue;
     fi
@@ -321,7 +322,7 @@ if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; the
     owner="$meta"
 
     # Targetfolder must be defined, move on otherwise
-    if [[ -z $targetfolder ]]; then
+    if [ -z "$targetfolder" ]; then
       echo "WARN: syntax error in EXPAND_S3_TARS"
       continue;
     fi
@@ -334,7 +335,7 @@ if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; the
     "$S3CMD" sync -r s3://$object $targetfolder/
 
     # Set the file and directory ownership, if applicable
-    if [[ -n $owner ]]; then
+    if [ $owner ]; then
       "$CHOWN" -R $owner $targetfolder
     fi
   done
@@ -343,7 +344,7 @@ if [[ -n $S3CMD ]] && [[ -n $EXPAND_S3_KEY ]] && [[ -n $EXPAND_S3_SECRET ]]; the
   "$RM" ~/.s3cfg
 fi
 # Unset the Environment
-export -n EXPAND_S3_KEY EXPAND_S3_SECRET EXPAND_S3_FILES EXPAND_S3_TARS EXPAND_S3_FOLDERS
+unset EXPAND_S3_KEY EXPAND_S3_SECRET EXPAND_S3_FILES EXPAND_S3_TARS EXPAND_S3_FOLDERS
 
 
 
@@ -363,7 +364,7 @@ for var in $EXPAND_SED_FILES; do
   script=$( echo $var | "$CUT" -d '|' -f 2-)
 
   # We need both to be defined, move on otherwise
-  if [[ -z $target ]] || [[ -z $script ]]; then
+  if [ -z "$target" ] || [ -z "$script" ]; then
     echo "WARN: syntax error in EXPAND_SED_FILES"
     continue;
   fi
@@ -372,7 +373,7 @@ for var in $EXPAND_SED_FILES; do
 
 done
 # Unset the Environment
-export -n EXPAND_SED_FILES
+unset EXPAND_SED_FILES
 
 
 
