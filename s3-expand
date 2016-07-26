@@ -276,7 +276,7 @@ if [ $S3CMD ] && [ $EXPAND_S3_KEY ] && [ $EXPAND_S3_SECRET ]; then
 
 
     # Create the containing directory, if necessary
-    if "$EXPR" match "$targetfile" '/$'; then
+    if "$EXPR" match "$targetfile" '.*/$'; then
       "$MKDIR" -p $targetfile
     else
       "$MKDIR" -p $("$DIRNAME" $targetfile)
