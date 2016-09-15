@@ -38,7 +38,7 @@ as root, and so has arbitrary ability to create files and change their owners
 and modes. Consequently, it is possible that not everything will work correctly
 if it is run as another user.
 
-The second form runs the script as an conversion utility to translate all the
+The second form runs the script as a conversion utility to translate all the
 newlines in a file to octal 032, which can then be placed into ENV variables for
 use with the `EXPAND_FILES` mode.
 
@@ -55,7 +55,7 @@ key-value pair will be ignored. You can also append `[mode|]`,
 `[mode|owner]`, or `[|owner]` to the path to set the numerical file 
 permissions, and/or the file owner. Since newlines are not allowed in 
 environmental variables, the script will replace any ASCII SUB character 
-(`\032` or `\x1a`) in the the value of the referenced environmental variable 
+(`\032` or `\x1a`) in the value of the referenced environmental variable 
 with a newline in the created file.
 
 So, as an example, suppose the following are set for the container:
