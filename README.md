@@ -188,7 +188,7 @@ ownership of all the files in that directory.
 Suppose the following ENV variable is set for the container (in addition to the
 S3 credentials):
 
-    EXPAND_S3_FILES="DXCmEdg4gb/proj|/data yBO8IJ/homes/foo/|/home/foo"
+    EXPAND_S3_FOLDERS="DXCmEdg4gb/proj|/data yBO8IJ/homes/foo/|/home/foo"
 
 Given that the folder layout in S3 is:
 
