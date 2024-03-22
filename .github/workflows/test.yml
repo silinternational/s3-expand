@@ -3,6 +3,11 @@ name: Test
 on:
   push:
 
+env:
+  EXPAND_S3_KEY: ${{ secrets.EXPAND_S3_KEY }}
+  EXPAND_S3_SECRET: ${{ secrets.EXPAND_S3_SECRET }}
+  S3_TEST_PATH: ${{ secrets.S3_TEST_PATH }}
+
 jobs:
   test:
     name: Test
