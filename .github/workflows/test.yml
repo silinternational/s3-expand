@@ -1,0 +1,22 @@
+name: Test
+
+on:
+  push:
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run tests
+        run: |
+          # Get s3cmd
+          sudo apt-get update
+          sudo apt-get install -y s3cmd fakeroot
+          #sudo apt-get download s3cmd
+          #sudo dpkg-deb -x *.deb s3cmd
+          #export PATH=$PATH:$(pwd)/s3cmd/usr/bin/
+          cd tests
+          fakeroot ./run-tests.sh
