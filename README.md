@@ -60,14 +60,14 @@ with a newline in the created file.
 
 So, as an example, suppose the following are set for the container:
 
-    EXPAND_FILES= ISSUE=/etc/issue SPECIFIC=/home/foo/.bashrc[0644|foo] FORGOT=/data/my_file
+    EXPAND_FILES= ISSUE=/etc/issue SPECIFIC=/home/foo/.bashrc[0664|foo] FORGOT=/data/my_file
     
     ISSUE=Linux, running in Docker!
     SPECIFIC=cd ~
 
 The wrapper script will then, when the container is started, overwrite 
 `/etc/issue` with "Linux, running in Docker!", create `/home/foo/.bashrc` with 
-contents "cd ~" (no newline at the end), permissions 644 and owner 
+contents "cd ~" (no newline at the end), permissions 664 and owner 
 user 'foo', and do nothing for `/data/my_file`, since FORGOT was not set.
 
 `EXPAND_SED_FILES`
