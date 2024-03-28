@@ -2,6 +2,7 @@
 test_succeeded=true
 
 if . ../check-s3-creds; then
+  chmod -R 664 ./originals/
   #   SEE MAN PAGE FOR S3CMD; TRAILING SLASHES ARE SIGNIFICANT
   s3cmd del s3://"$S3_TEST_PATH"/s3-sync
   s3cmd sync ./originals/ s3://"$S3_TEST_PATH"/s3-sync/
