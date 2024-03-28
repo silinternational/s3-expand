@@ -1,0 +1,23 @@
+name: Test
+
+on:
+  push:
+
+env:
+  EXPAND_S3_KEY: ${{ secrets.EXPAND_S3_KEY }}
+  EXPAND_S3_SECRET: ${{ secrets.EXPAND_S3_SECRET }}
+  S3_TEST_PATH: ${{ secrets.S3_TEST_PATH }}
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run tests
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y s3cmd fakeroot
+          cd tests
+          fakeroot ./run-tests.sh
