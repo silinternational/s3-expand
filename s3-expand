@@ -69,6 +69,7 @@ cmd_check_require MKDIR mkdir
 cmd_check_require TAR tar
 cmd_check_require RM rm
 cmd_check_require MKTEMP mktemp
+S3CFG_FILE=/tmp/.s3cfg
 
 # Need to have SOME arguments
 if "$EXPR" $# "<" 1 1>/dev/null 2>/dev/null; then
@@ -179,7 +180,7 @@ cmd_check S3CMD s3cmd
 # Check for EXPAND_S3_KEY and EXPAND_S3_SECRET in the environment, useless otherwise
 if [ $S3CMD ] && [ $EXPAND_S3_KEY ] && [ $EXPAND_S3_SECRET ]; then
   # Configure the credentials
-  "$CAT" > ~/.s3cfg <<-EOF
+  "$CAT" > $S3CFG_FILE <<-EOF
 	[default]
 	access_key = $EXPAND_S3_KEY
 	secret_key = $EXPAND_S3_SECRET
@@ -224,7 +225,7 @@ if [ $S3CMD ] && [ $EXPAND_S3_KEY ] && [ $EXPAND_S3_SECRET ]; then
     "$MKDIR" -p $targetdir
 
     # Run the extraction, overwriting files if necessary
-    "$S3CMD" --force get s3://$object "$temp_tar"
+    "$S3CMD" --config=$S3CFG_FILE --force get s3://$object "$temp_tar"
     
     # Untar it
     "$TAR" xf "$temp_tar" -C $targetdir
@@ -283,7 +284,7 @@ if [ $S3CMD ] && [ $EXPAND_S3_KEY ] && [ $EXPAND_S3_SECRET ]; then
     fi
 
     # Run the extraction
-    "$S3CMD" --force get s3://$object $targetfile
+    "$S3CMD" --config=$S3CFG_FILE --force get s3://$object $targetfile
 
     # Set the file's permissions, if applicable
     if [ $perms ]; then
@@ -332,7 +333,7 @@ if [ $S3CMD ] && [ $EXPAND_S3_KEY ] && [ $EXPAND_S3_SECRET ]; then
     "$MKDIR" -p $targetfolder/
 
     # Run the extraction
-    "$S3CMD" sync -r s3://$object $targetfolder/
+    "$S3CMD" --config=$S3CFG_FILE sync -r s3://$object $targetfolder/
 
     # Set the file and directory ownership, if applicable
     if [ $owner ]; then
@@ -341,7 +342,7 @@ if [ $S3CMD ] && [ $EXPAND_S3_KEY ] && [ $EXPAND_S3_SECRET ]; then
   done
 
   # Remove the Credentials
-  "$RM" ~/.s3cfg
+  "$RM" $S3CFG_FILE
 fi
 # Unset the Environment
 unset EXPAND_S3_KEY EXPAND_S3_SECRET EXPAND_S3_FILES EXPAND_S3_TARS EXPAND_S3_FOLDERS
